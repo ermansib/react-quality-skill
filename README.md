@@ -1,10 +1,11 @@
 # React Quality Skill
 
-The team's React + TypeScript code quality rules, packaged three ways:
+The team's React + TypeScript code quality rules, packaged four ways:
 
-1. **A Claude skill** (`skills/react-quality/`) for Claude.ai, Claude Code and the Claude desktop app.
-2. **Cursor rules** (`cursor/rules/`) generated from the same text, so the two never drift apart.
-3. **Shared configs** (`configs/`) that enforce the rules in every project: ESLint, Prettier, tsconfig, Vite/Vitest, Git hooks, CI, PR template and repo settings.
+1. **A Claude skill for writing code** (`skills/react-quality/`) for Claude.ai, Claude Code and the Claude desktop app.
+2. **A Claude skill for reviewing code** (`skills/react-quality-review/`) that checks code against the same rules and reports every violation with a rule id, severity, `file:line` and fix. See [Code reviewer](#code-reviewer).
+3. **Cursor rules** (`cursor/rules/`) generated from both skills, so the three never drift apart.
+4. **Shared configs** (`configs/`) that enforce the rules in every project: ESLint, Prettier, tsconfig, Vite/Vitest, Git hooks, CI, PR template and repo settings.
 
 It covers React web apps built with **Vite** and React Native apps built with **Expo / Metro**.
 
@@ -26,7 +27,18 @@ skills/react-quality/
     ├── web-vite.md
     ├── react-native.md
     └── code-review-checklist.md
-cursor/rules/                     # Generated .mdc files (one per file above)
+skills/react-quality-review/
+├── SKILL.md                      # Review workflow, severities, verdict rules
+├── references/
+│   ├── review-rules.md           # Rule catalogue: about 150 rules with ids (TS-01, A11Y-03 …), severity, how to detect
+│   ├── report-format.md          # The review report template
+│   └── rules/                    # Generated copy of skills/react-quality, so the zip is self-contained
+└── scripts/scan.mjs              # Zero-dependency scanner for the mechanical rules
+cursor/
+├── rules/                        # Generated .mdc files for both skills
+├── commands/review-react.md      # /review-react command for Cursor chat
+└── react-quality-scan.mjs        # Generated copy of the scanner
+tests/review/                     # Scanner tests and seeded bad-code fixtures
 configs/
 ├── eslint/                       # eslint.base.js + web and native configs (ESLint 9 flat config)
 ├── prettier/                     # prettier.config.js + .prettierignore
@@ -49,14 +61,15 @@ Per project, so the whole team gets it from git:
 ```sh
 mkdir -p .claude/skills
 cp -r path/to/react-quality-skill/skills/react-quality .claude/skills/
+cp -r path/to/react-quality-skill/skills/react-quality-review .claude/skills/
 ```
 
-Or for yourself across all projects: copy the folder to `~/.claude/skills/react-quality`.
+Or for yourself across all projects: copy the folders to `~/.claude/skills/`.
 
 ### Claude.ai and the Claude desktop app
 
-1. Run `npm run package:skill` (or download the `react-quality-skill` artifact from the latest **Validate** run in GitHub Actions).
-2. In Claude, open the **Skills** section of **Settings** and upload `dist/react-quality.zip`.
+1. Run `npm run package:skill` (or download the `react-quality-skill` and `react-quality-review-skill` artifacts from the latest **Validate** run in GitHub Actions).
+2. In Claude, open the **Skills** section of **Settings** and upload `dist/react-quality.zip` and `dist/react-quality-review.zip`.
 3. Team and Enterprise admins can share it with the whole organization from the same page.
 
 ### Cursor
@@ -64,11 +77,42 @@ Or for yourself across all projects: copy the folder to `~/.claude/skills/react-
 Copy the generated rules into the project:
 
 ```sh
-mkdir -p .cursor/rules
+mkdir -p .cursor/rules .cursor/commands
 cp path/to/react-quality-skill/cursor/rules/*.mdc .cursor/rules/
+cp path/to/react-quality-skill/cursor/commands/*.md .cursor/commands/
+cp path/to/react-quality-skill/cursor/react-quality-scan.mjs .cursor/
 ```
 
-`react-quality-core.mdc` is always applied. The others attach automatically by file pattern (for example the testing rule on `*.test.tsx`) or when Cursor decides they are relevant from their description.
+`react-quality-core.mdc` is always applied. The others attach automatically by file pattern (for example the testing rule on `*.test.tsx`) or when Cursor decides they are relevant from their description. The `react-quality-review*.mdc` rules load when you ask for a review.
+
+## Code reviewer
+
+The `react-quality-review` skill checks that code follows the rules above. It doesn't need a separate repository: it lives here so the reviewer and the rules change together, and `npm run validate` fails if they drift apart (every rules file needs a section in the review catalogue, and the review skill carries a generated copy of the rules).
+
+### What it does
+
+1. Works out the scope: a branch diff against `main`, a PR, files or a folder, or pasted code.
+2. Detects web (Vite) or native (Expo) per file, and whether the React Compiler is on.
+3. Runs the project's type check, ESLint, Prettier and tests, plus `scan.mjs`, a zero-dependency scanner with about 50 checks for the mechanical rules (`any`, `@ts-ignore`, index keys, empty `catch`, `<div onClick>`, tokens in `localStorage`, `ScrollView` + `.map()` and more).
+4. Reads the code against the rule catalogue for what a scanner can't judge: effects that should be derived values, state in the wrong place, missing loading / error / empty states, accessibility, untrusted input, missing tests.
+5. Writes a report: a verdict (Request changes, Approve with comments, Approve), the gate results, then findings by severity (blocker, major, minor, nit), each with a rule id, `file:line`, why it matters and a fix.
+
+It reviews only. Ask it to fix the findings afterwards if you want that.
+
+### Use it
+
+- **Claude Code / Claude.ai:** install the skill as above and ask, for example, "review my branch", "review src/features/cart against our React rules" or "is this PR ready to merge?".
+- **Cursor:** copy the rules, command and scanner as above, then type `/review-react` in chat (optionally followed by files or a folder), or ask "review this against our React rules".
+- **Scanner on its own** (any project, Node 20+):
+
+```sh
+node path/to/react-quality-review/scripts/scan.mjs --changed origin/main   # files changed on this branch
+node path/to/react-quality-review/scripts/scan.mjs src                     # a folder
+node path/to/react-quality-review/scripts/scan.mjs src --fail-on blocker   # exit 1 on blockers, e.g. in CI
+node path/to/react-quality-review/scripts/scan.mjs src --json              # machine-readable
+```
+
+Scanner hits are leads for the reviewer, not verdicts. The reviewer confirms each one and respects documented exceptions (for example an `as` cast with a comment linking the library issue).
 
 ## Apply the configs to a project
 
@@ -153,6 +197,7 @@ The configs target ESLint 9 (flat config), TypeScript 6.0, typescript-eslint 8, 
 ## Changing the rules
 
 1. Edit the files in `skills/react-quality/`. Each reference file needs `description` and `globs` in its frontmatter.
-2. Run `npm run build:cursor` to regenerate the Cursor rules.
-3. Run `npm run validate`. It checks the Cursor rules are in sync, formats, type checks and lints the example projects with the configs, and runs the example tests.
-4. Open a pull request. CI runs the same checks and attaches the packaged skill zip.
+2. Update the matching rows in `skills/react-quality-review/references/review-rules.md`. If the rule can be spotted mechanically, add it to `skills/react-quality-review/scripts/scan.mjs` with a case in `tests/review/fixtures/`.
+3. Run `npm run build:cursor` to regenerate the Cursor rules, the scanner copy and the reviewer's copy of the rules.
+4. Run `npm run validate`. It checks the generated files are in sync and the review catalogue covers every rules file, formats, type checks and lints the example projects with the configs, and runs the example tests and the scanner tests.
+5. Open a pull request. CI runs the same checks and attaches both packaged skill zips.

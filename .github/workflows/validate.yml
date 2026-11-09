@@ -21,9 +21,13 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Cursor rules in sync, configs valid, examples pass
         run: npm run validate
-      - name: Package the Claude skill
+      - name: Package the Claude skills
         run: npm run package:skill
       - uses: actions/upload-artifact@v4
         with:
           name: react-quality-skill
           path: dist/react-quality.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: react-quality-review-skill
+          path: dist/react-quality-review.zip
