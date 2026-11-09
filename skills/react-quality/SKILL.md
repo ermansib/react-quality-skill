@@ -1,73 +1,90 @@
 ---
 name: react-quality
-description: Use when writing, reviewing or refactoring React or React Native code in TypeScript (Vite web apps or Expo/React Native apps), to follow the team's code quality rules for typing, components, hooks, state, structure, performance, accessibility, security and testing.
+description: Write production-grade React and React Native code in TypeScript (Vite web apps and Expo apps). Use whenever writing, reviewing, refactoring or scaffolding components, hooks, utilities or features in TSX/JSX, including requests like "fix this component", "add a feature" or "refactor this", even when code quality isn't mentioned. Enforces type safety, component and hook design, state, structure, performance, accessibility, security and testing standards.
 ---
 
 # React + TypeScript Quality Guidelines
 
-These are the team's rules for React web apps (built with Vite) and React Native apps (built with Expo / Metro). Follow them for every change you write, review or refactor.
+These are the team's rules for React web apps (built with Vite) and React Native apps (built with Expo / Metro). Apply them to every component, hook, utility and feature you write, review or touch, not only when someone asks for "quality".
 
 The rules in this file apply everywhere. Load a reference file from `references/` when the task touches that area. Each reference has the detail, the reasons and the examples.
 
-| When the task involves                                 | Read                                  |
-| ------------------------------------------------------ | ------------------------------------- |
-| Types, generics, API data, `any`, enums                | `references/typescript.md`            |
-| Writing or splitting components, props, hooks, effects | `references/components-and-hooks.md`  |
-| Global state, server data, forms, URL state            | `references/state-and-data.md`        |
-| Folders, file names, imports, naming                   | `references/project-structure.md`     |
-| Errors, loading and empty states, logging              | `references/error-handling.md`        |
-| Slow renders, bundle size, lists, images               | `references/performance.md`           |
-| Labels, keyboard, focus, screen readers                | `references/accessibility.md`         |
-| User input, HTML, tokens, secrets, links               | `references/security.md`              |
-| Unit, component, integration and E2E tests             | `references/testing.md`               |
-| Vite config, env vars, routing, web-only APIs          | `references/web-vite.md`              |
-| Anything React Native or Expo                          | `references/react-native.md`          |
-| Reviewing a pull request or diff                       | `references/code-review-checklist.md` |
+| When the task involves                                   | Read                                  |
+| -------------------------------------------------------- | ------------------------------------- |
+| Types, generics, API data, `any`, enums, branded ids     | `references/typescript.md`            |
+| Writing or splitting components, props, hooks, effects   | `references/components-and-hooks.md`  |
+| Global state, server data, forms, URL state              | `references/state-and-data.md`        |
+| Folders, file names, imports, naming                     | `references/project-structure.md`     |
+| Errors, loading and empty states, null handling, logging | `references/error-handling.md`        |
+| Slow renders, bundle size, lists, images                 | `references/performance.md`           |
+| Labels, keyboard, focus, screen readers, dialogs         | `references/accessibility.md`         |
+| User input, HTML, tokens, secrets, links                 | `references/security.md`              |
+| Unit, hook, component, integration and E2E tests         | `references/testing.md`               |
+| Vite config, env vars, routing, web-only APIs            | `references/web-vite.md`              |
+| Anything React Native or Expo                            | `references/react-native.md`          |
+| Reviewing a pull request or diff                         | `references/code-review-checklist.md` |
+
+## Core principles
+
+When rules conflict, choose the option that better serves these four.
+
+1. **Type safety first.** The compiler is a teammate. `any`, unchecked `as`, `!` and `@ts-ignore` are bugs to fix, or deviations to justify in a comment.
+2. **Make invalid states unrepresentable.** Model data and props with discriminated unions and branded types, so impossible combinations can't be written.
+3. **Composition over configuration.** Small, single-purpose pieces that compose. No boolean prop explosions; use a `variant` union, `children` and compound components.
+4. **Performance is a feature; premature optimization is debt.** Default to readable code. Profile, then optimize what the profile shows.
+
+## Before you write code
+
+- Read the project's `package.json`, `tsconfig.json`, ESLint and Prettier configs, and a few neighbouring files. Match their patterns; don't introduce a rival convention.
+- Project conventions win over this skill when they conflict. Point out the conflict instead of silently mixing styles.
+- Ask before adding a dependency, and never add a second library for a job one already does (state, dates, forms, styling, data fetching).
 
 ## Golden rules
 
-1. **Follow the repo first.** Use the libraries, patterns and folder layout the project already uses. Do not add a second library for the same job (for example a second state manager or date library) without asking.
-2. **TypeScript is strict.** No `any`, no `@ts-ignore`, no non-null `!` to silence the compiler. Use `unknown` and narrow it. Validate data that crosses a boundary (API, storage, URL, deep link) with a schema such as Zod.
-3. **One component, one job.** Keep components small and pure. Move logic into custom hooks and plain functions. A component file over about 200 lines is a signal to split.
-4. **Derive, don't sync.** Compute values from props and state during render. Use `useEffect` only to sync with something outside React (a subscription, a timer, a browser or native API). Never fetch data in a raw `useEffect`; use the project's server-state library (TanStack Query by default).
-5. **Pick the smallest home for state.** Local state, then lifted state, then context for rarely changing values, then a store (Zustand or Redux Toolkit) for shared client state. Server data lives in the query cache, not in a store. Filter and page state lives in the URL on web.
-6. **Every async screen has four states:** loading, error, empty and success. Wrap route-level UI in an error boundary.
-7. **Accessible by default.** Use semantic elements (web) or accessibility props (native). Every control has an accessible name, works by keyboard (web), and has a touch target of at least 44×44.
-8. **Never trust input, never ship secrets.** Anything in `VITE_*` or `EXPO_PUBLIC_*` env vars is public. No `dangerouslySetInnerHTML` without sanitizing. Store tokens in httpOnly cookies (web) or SecureStore / Keychain (native), never in `localStorage` or `AsyncStorage`.
-9. **Test behaviour, not implementation.** Query by role and label, interact with `userEvent`, mock the network (MSW), not your own modules. New logic ships with tests.
-10. **Measure before optimizing.** Don't sprinkle `useMemo`, `useCallback` or `React.memo` by default, and don't add them at all when the React Compiler is on. Do split code by route and virtualize long lists.
+1. **TypeScript is strict.** No `any`, no `@ts-ignore`, no non-null `!`. Use `unknown` and narrow it. Validate data that crosses a boundary (API, storage, URL, deep link) with a schema (Zod or Valibot).
+2. **One component, one job.** Function components only, no `React.FC`, no `defaultProps`. Keep them small and pure; move logic into custom hooks and plain functions. Over about 200 lines is a signal to split.
+3. **Derive, don't sync.** Compute values from props and state during render. Use `useEffect` only to sync with something outside React. Never fetch data in a raw `useEffect`; use the server-state library (TanStack Query by default).
+4. **Pick the smallest home for state.** Local, then lifted, then composition, then context for rarely changing values, then a store (Zustand, Jotai or Redux Toolkit). Server data lives in the query cache. Filter and page state lives in the URL on web.
+5. **Every async screen has four states:** loading, error, empty and success. Wrap route-level UI in an error boundary with a retry path.
+6. **Accessible by default.** Semantic elements (web) or accessibility props (native). Every control has an accessible name, works by keyboard with visible focus (web), and has a 44×44 touch target. A component that fails accessibility is not finished.
+7. **Never trust input, never ship secrets.** `VITE_*` and `EXPO_PUBLIC_*` vars are public. No `dangerouslySetInnerHTML` without DOMPurify. Tokens go in httpOnly cookies (web) or SecureStore (native), never `localStorage` or `AsyncStorage`.
+8. **Test behaviour, not implementation.** Query by role and label, interact with `userEvent`, mock the network with MSW. New logic ships with a colocated test.
+9. **Measure before memoizing.** No `useMemo`, `useCallback` or `memo` "just in case", and none at all when the React Compiler is on. Do split code by route and virtualize long lists.
+10. **React 19 first.** `ref` is a prop (no `forwardRef`), use Actions and `useActionState` for forms, `<Context>` as its own provider.
 
 ## Naming
 
-- Components, types and interfaces: `PascalCase` (`UserCard`, `UserCardProps`).
+- Components and types: `PascalCase` (`UserCard`, `UserCardProps`). No `I` or `T` prefixes (`User`, not `IUser`).
+- Props are declared with `type` (`type UserCardProps = { … }`); use `interface` only when you need extension or declaration merging.
 - Hooks: `useCamelCase`, and only if the function calls another hook.
-- Functions and variables: `camelCase` verbs for functions (`formatPrice`), nouns for values (`totalPrice`).
+- Functions and variables: `camelCase`, verbs for functions (`formatPrice`), nouns for values (`totalPrice`).
 - Booleans read as a yes/no question: `isOpen`, `hasError`, `canSubmit`, `shouldRetry`.
 - Event props start with `on` (`onSelect`); the handlers that implement them start with `handle` (`handleSelect`).
-- Constants that never change: `SCREAMING_SNAKE_CASE` (`MAX_RETRIES`). No magic numbers or strings in logic.
-- Files: the component's name for component files (`UserCard.tsx`); `camelCase` for everything else (`useUser.ts`, `formatPrice.ts`). Tests sit next to the file as `*.test.ts(x)`.
+- Constants: `UPPER_SNAKE_CASE` (`MAX_RETRIES`). No magic numbers or strings in logic.
+- Files: the component's name for component files (`UserCard.tsx`); `camelCase` for the rest (`useUser.ts`, `formatPrice.ts`). Tests sit next to the file as `*.test.ts(x)`.
 
 ## Shape of a good component
 
 ```tsx
-import type { User } from '@/features/users/types';
 import { Avatar } from '@/components/Avatar';
+import type { User } from '@/features/users/types';
 import { useTruncate } from '@/hooks/useTruncate';
 
 const MAX_BIO_LENGTH = 150;
 
-interface UserCardProps {
+type UserCardProps = {
   user: User;
   onFollow: (userId: User['id']) => void;
-}
+};
 
 export function UserCard({ user, onFollow }: UserCardProps) {
   const bio = useTruncate(user.bio, MAX_BIO_LENGTH);
+  const headingId = `user-${user.id}-name`;
 
   return (
-    <article aria-labelledby={`user-${user.id}-name`}>
+    <article aria-labelledby={headingId}>
       <Avatar src={user.avatarUrl} alt="" />
-      <h3 id={`user-${user.id}-name`}>{user.name}</h3>
+      <h3 id={headingId}>{user.name}</h3>
       <p>{bio}</p>
       <button type="button" onClick={() => onFollow(user.id)}>
         Follow {user.name}
@@ -77,32 +94,76 @@ export function UserCard({ user, onFollow }: UserCardProps) {
 }
 ```
 
-Why it is good: typed props interface, named export, a named constant instead of a magic number, logic in a hook, semantic HTML, a decorative image with empty `alt`, and a button whose accessible name says what it does.
+Why it is good: typed props, named export, a named constant instead of a magic number, logic in a hook, semantic HTML, a decorative image with empty `alt`, and a button whose accessible name says what it does.
+
+## Anti-patterns and their fixes
+
+| Smell                                                      | Fix                                                              |
+| ---------------------------------------------------------- | ---------------------------------------------------------------- |
+| `any`                                                      | `unknown` + narrowing, or a real type                            |
+| `as` cast                                                  | Type guard, `satisfies` or a schema parse                        |
+| `enum`                                                     | String literal union or `as const` object                        |
+| `React.FC`, `defaultProps`                                 | Plain function with typed props; defaults in destructuring       |
+| `forwardRef` in React 19                                   | Accept `ref` as a prop                                           |
+| Several boolean style props (`primary`, `ghost`, `danger`) | One `variant` union prop                                         |
+| `useEffect` copying a prop into state                      | Derive in render, or reset with `key`                            |
+| Effects that trigger each other                            | One effect, or move the logic to the event handler               |
+| Fetching in `useEffect`                                    | TanStack Query hook                                              |
+| 3+ `useState` calls that change together                   | `useReducer`                                                     |
+| Server data in Redux / Zustand                             | Query cache                                                      |
+| Prop drilling five levels deep                             | Composition first, then context or a store                       |
+| Index or random value as `key`                             | Stable id from the data                                          |
+| `{count && <X />}`                                         | `{count > 0 && <X />}` or a ternary                              |
+| `<div onClick>`                                            | `<button>` (web) or `Pressable` with a role (native)             |
+| `outline: none` with no replacement                        | A visible `:focus-visible` style                                 |
+| Empty `catch {}`                                           | Handle, surface to the user, or rethrow                          |
+| `console.log` in shipped code                              | Remove, or use the logger                                        |
+| `useCallback` on every function                            | Only for memoized children or hook dependencies, after profiling |
 
 ## Quality gates
 
 A change is done only when all of these pass. The configs in this repo's `configs/` folder enforce most of them in CI.
 
-| Gate                        | Target                                                                                     |
-| --------------------------- | ------------------------------------------------------------------------------------------ |
-| Type check (`tsc --noEmit`) | 0 errors                                                                                   |
-| ESLint                      | 0 errors and 0 warnings (`--max-warnings 0`)                                               |
-| Prettier                    | `prettier --check` passes                                                                  |
-| Unit and component tests    | All pass; changed code is covered (team floor: 80% lines)                                  |
-| Cyclomatic complexity       | 10 or less per function                                                                    |
-| File and function size      | Files 300 lines or less, functions 120 or less (tests excluded)                            |
-| Accessibility               | No `jsx-a11y` errors; key flows checked with a screen reader before release                |
-| Web performance             | Lighthouse performance and accessibility 90 or more on key pages; route chunks lazy-loaded |
-| Native performance          | Lists use `FlatList` or `FlashList`; no JS-thread animations for gestures                  |
-| Dependencies                | `npm audit --audit-level=high` clean; no unused dependencies                               |
+| Gate                     | Target                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| Type check (`tsc`)       | 0 errors                                                                             |
+| ESLint (type-aware)      | 0 errors and 0 warnings (`--max-warnings 0`)                                         |
+| Prettier                 | `prettier --check` passes                                                            |
+| Unit and component tests | All pass; risky and user-facing logic covered (team floor: 80% lines)                |
+| Cyclomatic complexity    | 10 or less per function                                                              |
+| File and function size   | Files 300 lines or less, functions 120 or less (tests excluded)                      |
+| Accessibility            | No `jsx-a11y` or axe errors; key flows checked with a screen reader before release   |
+| Web performance          | Lighthouse performance and accessibility 90 or more on key pages; routes lazy-loaded |
+| Native performance       | Lists use `FlatList` or `FlashList`; gesture animations on the UI thread             |
+| Dependencies             | `npm audit --audit-level=high` clean; no unused dependencies                         |
 
 ## Before finishing a change
 
 - [ ] Type check, lint, format and tests pass locally.
-- [ ] No `any`, `@ts-ignore`, `eslint-disable` or `console.log` added (a disable needs a comment saying why).
+- [ ] No `any`, `as`, `!`, `@ts-ignore`, `eslint-disable` or `console.*` without a comment saying why.
+- [ ] Props and state modeled with unions where they have distinct cases.
+- [ ] Hooks follow the rules; dependency arrays complete; no effect for something derivable in render.
+- [ ] No `forwardRef` (unless supporting React 18 or older).
 - [ ] Loading, error and empty states are handled.
-- [ ] New UI is keyboard and screen-reader accessible.
-- [ ] No secrets, tokens or personal data in code, logs or env vars that ship to the client.
-- [ ] New logic has tests; bug fixes have a test that failed before the fix.
+- [ ] Keyboard and screen-reader accessible, with visible focus; semantic HTML; ARIA only where needed.
+- [ ] No secrets, tokens or personal data in code, logs or public env vars; no unsanitized HTML.
+- [ ] Colocated tests cover the behaviour; bug fixes have a test that failed before the fix.
+- [ ] Bundle impact considered: heavy or below-the-fold code lazy-loaded.
 - [ ] User-facing strings go through the project's i18n layer if it has one.
-- [ ] The commit message follows Conventional Commits (`feat:`, `fix:`, `refactor:` …).
+- [ ] Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:` …).
+
+## When to break the rules
+
+Rules are defaults, not commandments. Break one only on purpose, with a comment that says why. Common legitimate cases:
+
+- An `as` cast to work around a third-party library's loose types, with a link to the library issue.
+- `any` in a migration shim that is about to be deleted, with the removal plan.
+- `useEffect` for real external systems: subscriptions, polling, WebSockets, timers.
+- An inline arrow handler (`() => remove(id)`) when no memoized child receives it.
+- `@ts-expect-error` (never `@ts-ignore`) for an upstream type bug, with a tracking link.
+
+The point is intent, not ritual: understand the rule, then decide consciously.
+
+## When reviewing
+
+Surface concrete violations with `file:line`, why it matters, and a suggested fix, ordered by severity. Use `references/code-review-checklist.md`.

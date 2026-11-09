@@ -10,13 +10,15 @@ alwaysApply: false
 
 ## Choose the smallest home
 
+Climb this ladder only as far as you need: local state → lifted state → composition (pass JSX through `children` instead of drilling props) → context → store.
+
 | Kind of state                                                                 | Where it lives                                                       |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | UI state used by one component (open, hover, input text)                      | `useState` / `useReducer` in that component                          |
 | UI state shared by a few nearby components                                    | Lift it to the closest common parent                                 |
 | Rarely changing app-wide values (theme, locale, current user, feature flags)  | React Context                                                        |
-| Frequently changing client state shared across the app (cart, editor, wizard) | A store: Zustand, or Redux Toolkit if the project already uses it    |
-| Data that lives on a server                                                   | TanStack Query (or RTK Query in a Redux project)                     |
+| Frequently changing client state shared across the app (cart, editor, wizard) | A store: Zustand or Jotai, or Redux Toolkit if the project uses it   |
+| Data that lives on a server                                                   | TanStack Query (or SWR, or RTK Query in a Redux project)             |
 | Filters, sorting, pagination, selected tab (web)                              | URL search params                                                    |
 | Form fields and validation                                                    | React Hook Form + Zod, or React 19 form actions for simple forms     |
 | Values that persist across launches (native)                                  | MMKV or AsyncStorage for non-sensitive data, SecureStore for secrets |
@@ -38,7 +40,12 @@ export function useAuth(): AuthValue {
 }
 ```
 
-- Context re-renders every consumer when its value changes. For fast-changing values use a store with selectors instead.
+- Context is a way to pass values down, not a state manager. Pair it with `useReducer` for simple cases, and use a store for frequent updates.
+- Context re-renders every consumer when its value changes. Split contexts by update frequency (a rarely changing `ThemeContext` apart from a fast `HoverContext`), or use a store with selectors (`useSyncExternalStore` under the hood) so consumers re-render only for their slice.
+
+## Derived state
+
+If a value can be computed from props or other state, compute it during render. Don't mirror it into another `useState` and try to keep the two in sync with an effect.
 
 ## Stores (Zustand)
 

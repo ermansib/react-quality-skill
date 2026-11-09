@@ -25,7 +25,8 @@ src/
 ├── lib/                 # Configured third-party clients (apiClient, queryClient, i18n)
 ├── utils/               # Pure shared helpers (formatDate, assertNever)
 ├── constants/
-└── types/               # Truly global types only
+├── types/               # Truly global types only
+└── test/                # Test setup, MSW handlers, render helpers, factories
 ```
 
 ## Boundaries
@@ -34,7 +35,7 @@ src/
 - Never import another feature's internals (`features/users/components/…` from `features/orders`).
 - Shared folders never import from `features/`.
 - No circular imports. ESLint's `import-x/no-cycle` catches them.
-- Keep `index.ts` barrels at the feature level only. Deep barrels in every folder slow down Vite and Metro and hide cycles.
+- Keep `index.ts` barrels at the feature level only, and be intentional: export the feature's public API, not everything. Deep barrels in every folder slow down Vite and Metro and hide cycles.
 
 ## Imports
 
@@ -56,7 +57,9 @@ src/
 | Styles (CSS Modules)       | `UserCard.module.css`                           |
 | Platform-specific (native) | `Map.ios.tsx`, `Map.android.tsx`, `Map.web.tsx` |
 
-Tests, stories and styles sit next to the file they belong to.
+Tests, stories, styles and types sit next to the file they belong to. Colocation beats deep `__tests__` trees. A shared component can get its own folder (`components/Button/Button.tsx`, `Button.test.tsx`, `Button.module.css`).
+
+Types are `PascalCase` with no `I` or `T` prefix (`User`, not `IUser` or `TUser`). One file exports one primary thing; small helpers can live beside it until they grow.
 
 ## Size limits
 

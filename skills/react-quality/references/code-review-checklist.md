@@ -7,6 +7,18 @@ globs: ''
 
 Use this when reviewing a pull request or a diff. Report findings ordered by severity: bugs and security first, then accessibility and correctness risks, then maintainability, then style nits (mark nits as optional). For each finding give the file and line, what is wrong, and a concrete fix.
 
+## Quick heuristics
+
+Ask these first; they catch most problems:
+
+- Is the type honest? Could an invalid state be expressed?
+- Could this `useEffect` be a derived value or an event handler?
+- Is the prop API small and orthogonal? Any boolean prop explosion?
+- Can it be used by keyboard and by screen reader?
+- Are errors shown to the user, not just logged to the console?
+- Is there a test that would fail if this behaviour broke?
+- Does the diff introduce a pattern that conflicts with an existing one?
+
 ## Correctness
 
 - [ ] The change does what the PR says, and handles edge cases (empty, null, very long, slow network, offline).
@@ -21,6 +33,7 @@ Use this when reviewing a pull request or a diff. Report findings ordered by sev
 - [ ] No `any`, `@ts-ignore`, unchecked `as` casts or `!` assertions.
 - [ ] External data (API, storage, URL, deep link) is validated with a schema.
 - [ ] Union states instead of contradictory booleans; exhaustive switches.
+- [ ] Props declared with `type`; no `React.FC`, `defaultProps` or `forwardRef` (React 19).
 
 ## Design and readability
 

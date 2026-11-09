@@ -8,7 +8,7 @@ globs: '**/*.ts,**/*.tsx'
 ## Error boundaries
 
 - Wrap the app root and each route or screen in an error boundary (`react-error-boundary`). A crash in one screen must not blank the whole app.
-- The fallback says what happened in plain words and offers a way out (retry, go back, go home).
+- The fallback says what happened in plain words (not just "Something went wrong") and offers a way out (retry, go back, go home).
 - Reset the boundary when the user navigates (`resetKeys={[location.pathname]}`) or retries.
 - Report caught errors to the monitoring tool in `onError`.
 - Error boundaries don't catch errors in event handlers or async code. Handle those with `try` / `catch` or the data layer's error state.
@@ -34,6 +34,7 @@ Every screen or widget that loads data handles all four:
 
 - Never swallow errors: no empty `catch {}`. Handle it, rethrow it, or log it with context.
 - Throw `Error` objects (or subclasses), never strings.
+- Model request errors in the state union (`{ status: 'error'; error: ApiError }`) or use the query library's error state, and show them to the user; don't only log to the console.
 - Narrow caught values: `catch (error: unknown)` then `if (error instanceof ApiError)`.
 - Use typed error classes for expected failures (`ApiError`, `ValidationError`) so the UI can react to `status` or `code`.
 - For expected failures in pure logic, return a result type instead of throwing:
@@ -43,6 +44,11 @@ type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E };
 ```
 
 - Always handle promise rejections. ESLint's `no-floating-promises` flags unhandled ones; use `void` only for fire-and-forget calls that handle their own errors.
+
+## Null and undefined
+
+- Use optional chaining (`user?.address?.city`) and nullish coalescing (`value ?? fallback`) instead of `&&` chains and `||` (which also replaces `0` and `''`).
+- Normalise at the boundary: default a possibly missing array with `?? []` where the data enters (API mapper, schema `.default([])`), not deep inside components.
 
 ## User feedback
 

@@ -4,10 +4,10 @@ import type { User } from '../types';
 
 const MAX_BIO_LENGTH = 150;
 
-interface UserCardProps {
+type UserCardProps = {
   user: User;
   onFollow: (userId: User['id']) => void;
-}
+};
 
 export function UserCard({ user, onFollow }: UserCardProps) {
   const bio = useTruncate(user.bio, MAX_BIO_LENGTH);

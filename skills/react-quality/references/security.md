@@ -34,6 +34,7 @@ export function isSafeUrl(value: string): boolean {
 
 - `target="_blank"` links get `rel="noopener noreferrer"`.
 - Set a Content Security Policy on the web host. Avoid inline scripts so the CSP can be strict.
+- Review every third-party script (analytics, chat widgets, tag managers) before adding it; it runs with full access to the page.
 
 ## Authentication and tokens
 
@@ -56,7 +57,7 @@ export function isSafeUrl(value: string): boolean {
 
 ## Dependencies
 
-- Run `npm audit --audit-level=high` in CI and keep Dependabot (or Renovate) on.
+- Run `npm audit --audit-level=high` in CI and keep Dependabot (or Renovate) on. Add Snyk or GitHub code scanning for deeper checks.
 - Commit the lockfile and install with `npm ci`.
 - Before adding a package, check it is maintained, widely used and the right size for the job.
 - Pin GitHub Actions to a version tag or commit SHA.

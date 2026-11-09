@@ -24,6 +24,8 @@ Target WCAG 2.2 level AA on web and the equivalent on native. `eslint-plugin-jsx
 
 - Every interactive element has an accessible name: visible text, a `<label>`, or `aria-label` for icon-only buttons.
 - Images: meaningful `alt` text; `alt=""` for decorative images.
+- Icons: `aria-hidden="true"` when decorative; otherwise give the icon or its button an `aria-label`.
+- Generate ids for label and description links with `useId`, never by hand.
 - Link text makes sense out of context ("View invoice 1042", not "Click here").
 - Link error and help text to inputs with `aria-describedby`; mark invalid fields with `aria-invalid`.
 
@@ -31,7 +33,7 @@ Target WCAG 2.2 level AA on web and the equivalent on native. `eslint-plugin-jsx
 
 - Everything works with a keyboard: Tab, Shift+Tab, Enter, Space, Escape, arrow keys inside composite widgets.
 - Focus is always visible. Never remove the outline without a replacement.
-- Dialogs trap focus, close on Escape and return focus to the trigger. Prefer the native `<dialog>` element or a tested library (Radix, React Aria, Headless UI).
+- Dialogs use `role="dialog"` and `aria-modal="true"` (or the native `<dialog>` element), have a label, trap focus, close on Escape and return focus to the trigger. Prefer a tested library (Radix, React Aria, Headless UI) over building your own.
 - Move focus to the new page's heading or main region after client-side navigation.
 - Don't use a positive `tabIndex`.
 
@@ -45,7 +47,7 @@ Target WCAG 2.2 level AA on web and the equivalent on native. `eslint-plugin-jsx
 
 ### Dynamic content
 
-- Announce async results and toasts with an `aria-live="polite"` region (`assertive` only for errors that need attention now).
+- Announce async results and toasts with `role="status"` or an `aria-live="polite"` region (`role="alert"` / `assertive` only for urgent errors).
 - Loading regions get `aria-busy="true"`.
 
 ## React Native
@@ -64,5 +66,5 @@ Target WCAG 2.2 level AA on web and the equivalent on native. `eslint-plugin-jsx
 ## Testing
 
 - Component tests query by role and name (`getByRole('button', { name: 'Save' })`). If you can't find an element that way, neither can a screen reader user.
-- Run `axe` in component or E2E tests on web (`vitest-axe` or `@axe-core/playwright`).
+- Run axe-core in tests on web: `vitest-axe` (or `jest-axe`) in component tests, `@axe-core/playwright` in E2E. `@axe-core/react` can log issues in development.
 - Before release, walk through key flows with a keyboard only and with a screen reader on each platform.

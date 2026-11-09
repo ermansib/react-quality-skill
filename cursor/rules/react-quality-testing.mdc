@@ -14,18 +14,20 @@ alwaysApply: false
 | ------------------ | -------------------------------------------------------------- | -------------------------------------------------------- |
 | Unit and component | Vitest + React Testing Library + `@testing-library/user-event` | Jest (`jest-expo` preset) + React Native Testing Library |
 | Network mocking    | MSW                                                            | MSW (`msw/native`)                                       |
-| End to end         | Playwright                                                     | Maestro (or Detox)                                       |
+| End to end         | Playwright (or Cypress)                                        | Maestro (or Detox)                                       |
 | Accessibility      | `vitest-axe`, `@axe-core/playwright`                           | RNTL role queries, manual screen reader checks           |
 
 ## What to test
 
-- **Pure functions and hooks with logic:** unit tests with edge cases.
+- **Pure functions, reducers and hooks with logic:** unit tests with edge cases. Test hooks with `renderHook`.
+- **Edge cases:** empty, loading, error, very long text and large data; async paths loading → success and loading → error.
+- **Accessibility:** an axe check in component tests (`vitest-axe` / `jest-axe`).
 - **Components:** what the user sees and does. Render, interact, assert on the result.
 - **Feature flows:** integration tests that render a screen with providers and MSW handlers, covering success, error and empty responses.
 - **Critical journeys** (sign in, checkout, onboarding): a few E2E tests against a real build.
 - **Bug fixes:** add a test that fails without the fix.
 
-Don't test implementation details: internal state, private functions, which hook was called, CSS class names, snapshot dumps of large trees.
+Don't test implementation details: internal state, private functions, which hook was called, CSS class names, snapshot dumps of large trees. Use snapshots only for small, stable, low-churn output; prefer explicit assertions.
 
 ## Writing tests
 
@@ -52,7 +54,7 @@ it("lets the user follow someone", async () => {
 
 ## Coverage
 
-- Team floor: 80% lines and branches on new and changed code. Coverage is a signal, not the goal; don't write assertion-free tests to reach it.
+- Team floor: 80% lines and branches on new and changed code. Coverage is a smell detector, not a goal: focus tests on risky, complex and user-facing logic, and don't write assertion-free tests or test trivial getters to reach the number.
 - Exclude generated code, type-only files, stories and config from coverage.
 
 ## E2E

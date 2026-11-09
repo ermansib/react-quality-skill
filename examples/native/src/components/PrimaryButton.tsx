@@ -2,11 +2,11 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { colors, MIN_TOUCH_TARGET, spacing } from '@/theme/tokens';
 
-interface PrimaryButtonProps {
+type PrimaryButtonProps = {
   label: string;
   onPress: () => void;
   isDisabled?: boolean;
-}
+};
 
 export function PrimaryButton({ label, onPress, isDisabled = false }: PrimaryButtonProps) {
   return (

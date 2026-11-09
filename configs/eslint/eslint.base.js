@@ -91,6 +91,7 @@ export function createBaseConfig(options = {}) {
           { fixStyle: 'inline-type-imports' },
         ],
         '@typescript-eslint/consistent-type-exports': 'error',
+        '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
         '@typescript-eslint/no-import-type-side-effects': 'error',
         '@typescript-eslint/no-explicit-any': 'error',
         '@typescript-eslint/no-non-null-assertion': 'error',
@@ -126,6 +127,11 @@ export function createBaseConfig(options = {}) {
         '@typescript-eslint/naming-convention': [
           'error',
           { selector: 'typeLike', format: ['PascalCase'] },
+          {
+            selector: ['interface', 'typeAlias'],
+            format: ['PascalCase'],
+            custom: { regex: '^[IT][A-Z]', match: false },
+          },
           { selector: 'variable', modifiers: ['destructured'], format: null },
           {
             selector: 'variable',
