@@ -1,0 +1,9 @@
+// Example project used to check the team configs in CI.
+{
+  "extends": "../../configs/tsconfig/tsconfig.web.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"],
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["src", "vite.config.ts"]
+}

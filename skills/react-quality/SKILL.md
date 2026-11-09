@@ -1,0 +1,108 @@
+---
+name: react-quality
+description: Use when writing, reviewing or refactoring React or React Native code in TypeScript (Vite web apps or Expo/React Native apps), to follow the team's code quality rules for typing, components, hooks, state, structure, performance, accessibility, security and testing.
+---
+
+# React + TypeScript Quality Guidelines
+
+These are the team's rules for React web apps (built with Vite) and React Native apps (built with Expo / Metro). Follow them for every change you write, review or refactor.
+
+The rules in this file apply everywhere. Load a reference file from `references/` when the task touches that area. Each reference has the detail, the reasons and the examples.
+
+| When the task involves                                 | Read                                  |
+| ------------------------------------------------------ | ------------------------------------- |
+| Types, generics, API data, `any`, enums                | `references/typescript.md`            |
+| Writing or splitting components, props, hooks, effects | `references/components-and-hooks.md`  |
+| Global state, server data, forms, URL state            | `references/state-and-data.md`        |
+| Folders, file names, imports, naming                   | `references/project-structure.md`     |
+| Errors, loading and empty states, logging              | `references/error-handling.md`        |
+| Slow renders, bundle size, lists, images               | `references/performance.md`           |
+| Labels, keyboard, focus, screen readers                | `references/accessibility.md`         |
+| User input, HTML, tokens, secrets, links               | `references/security.md`              |
+| Unit, component, integration and E2E tests             | `references/testing.md`               |
+| Vite config, env vars, routing, web-only APIs          | `references/web-vite.md`              |
+| Anything React Native or Expo                          | `references/react-native.md`          |
+| Reviewing a pull request or diff                       | `references/code-review-checklist.md` |
+
+## Golden rules
+
+1. **Follow the repo first.** Use the libraries, patterns and folder layout the project already uses. Do not add a second library for the same job (for example a second state manager or date library) without asking.
+2. **TypeScript is strict.** No `any`, no `@ts-ignore`, no non-null `!` to silence the compiler. Use `unknown` and narrow it. Validate data that crosses a boundary (API, storage, URL, deep link) with a schema such as Zod.
+3. **One component, one job.** Keep components small and pure. Move logic into custom hooks and plain functions. A component file over about 200 lines is a signal to split.
+4. **Derive, don't sync.** Compute values from props and state during render. Use `useEffect` only to sync with something outside React (a subscription, a timer, a browser or native API). Never fetch data in a raw `useEffect`; use the project's server-state library (TanStack Query by default).
+5. **Pick the smallest home for state.** Local state, then lifted state, then context for rarely changing values, then a store (Zustand or Redux Toolkit) for shared client state. Server data lives in the query cache, not in a store. Filter and page state lives in the URL on web.
+6. **Every async screen has four states:** loading, error, empty and success. Wrap route-level UI in an error boundary.
+7. **Accessible by default.** Use semantic elements (web) or accessibility props (native). Every control has an accessible name, works by keyboard (web), and has a touch target of at least 44×44.
+8. **Never trust input, never ship secrets.** Anything in `VITE_*` or `EXPO_PUBLIC_*` env vars is public. No `dangerouslySetInnerHTML` without sanitizing. Store tokens in httpOnly cookies (web) or SecureStore / Keychain (native), never in `localStorage` or `AsyncStorage`.
+9. **Test behaviour, not implementation.** Query by role and label, interact with `userEvent`, mock the network (MSW), not your own modules. New logic ships with tests.
+10. **Measure before optimizing.** Don't sprinkle `useMemo`, `useCallback` or `React.memo` by default, and don't add them at all when the React Compiler is on. Do split code by route and virtualize long lists.
+
+## Naming
+
+- Components, types and interfaces: `PascalCase` (`UserCard`, `UserCardProps`).
+- Hooks: `useCamelCase`, and only if the function calls another hook.
+- Functions and variables: `camelCase` verbs for functions (`formatPrice`), nouns for values (`totalPrice`).
+- Booleans read as a yes/no question: `isOpen`, `hasError`, `canSubmit`, `shouldRetry`.
+- Event props start with `on` (`onSelect`); the handlers that implement them start with `handle` (`handleSelect`).
+- Constants that never change: `SCREAMING_SNAKE_CASE` (`MAX_RETRIES`). No magic numbers or strings in logic.
+- Files: the component's name for component files (`UserCard.tsx`); `camelCase` for everything else (`useUser.ts`, `formatPrice.ts`). Tests sit next to the file as `*.test.ts(x)`.
+
+## Shape of a good component
+
+```tsx
+import type { User } from '@/features/users/types';
+import { Avatar } from '@/components/Avatar';
+import { useTruncate } from '@/hooks/useTruncate';
+
+const MAX_BIO_LENGTH = 150;
+
+interface UserCardProps {
+  user: User;
+  onFollow: (userId: User['id']) => void;
+}
+
+export function UserCard({ user, onFollow }: UserCardProps) {
+  const bio = useTruncate(user.bio, MAX_BIO_LENGTH);
+
+  return (
+    <article aria-labelledby={`user-${user.id}-name`}>
+      <Avatar src={user.avatarUrl} alt="" />
+      <h3 id={`user-${user.id}-name`}>{user.name}</h3>
+      <p>{bio}</p>
+      <button type="button" onClick={() => onFollow(user.id)}>
+        Follow {user.name}
+      </button>
+    </article>
+  );
+}
+```
+
+Why it is good: typed props interface, named export, a named constant instead of a magic number, logic in a hook, semantic HTML, a decorative image with empty `alt`, and a button whose accessible name says what it does.
+
+## Quality gates
+
+A change is done only when all of these pass. The configs in this repo's `configs/` folder enforce most of them in CI.
+
+| Gate                        | Target                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------ |
+| Type check (`tsc --noEmit`) | 0 errors                                                                                   |
+| ESLint                      | 0 errors and 0 warnings (`--max-warnings 0`)                                               |
+| Prettier                    | `prettier --check` passes                                                                  |
+| Unit and component tests    | All pass; changed code is covered (team floor: 80% lines)                                  |
+| Cyclomatic complexity       | 10 or less per function                                                                    |
+| File and function size      | Files 300 lines or less, functions 120 or less (tests excluded)                            |
+| Accessibility               | No `jsx-a11y` errors; key flows checked with a screen reader before release                |
+| Web performance             | Lighthouse performance and accessibility 90 or more on key pages; route chunks lazy-loaded |
+| Native performance          | Lists use `FlatList` or `FlashList`; no JS-thread animations for gestures                  |
+| Dependencies                | `npm audit --audit-level=high` clean; no unused dependencies                               |
+
+## Before finishing a change
+
+- [ ] Type check, lint, format and tests pass locally.
+- [ ] No `any`, `@ts-ignore`, `eslint-disable` or `console.log` added (a disable needs a comment saying why).
+- [ ] Loading, error and empty states are handled.
+- [ ] New UI is keyboard and screen-reader accessible.
+- [ ] No secrets, tokens or personal data in code, logs or env vars that ship to the client.
+- [ ] New logic has tests; bug fixes have a test that failed before the fix.
+- [ ] User-facing strings go through the project's i18n layer if it has one.
+- [ ] The commit message follows Conventional Commits (`feat:`, `fix:`, `refactor:` …).

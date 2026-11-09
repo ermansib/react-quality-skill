@@ -1,0 +1,6 @@
+// Root tsconfig.json for a Vite project: references the app and node configs.
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "files": [],
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
+}

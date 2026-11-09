@@ -1,0 +1,85 @@
+---
+description: Rules specific to React Native and Expo apps - project setup, navigation, styling, platform code, lists, storage, permissions, releases
+globs: app/**/*.tsx,src/**/*.native.tsx,src/**/*.ios.tsx,src/**/*.android.tsx,app.json,app.config.ts,metro.config.js
+alwaysApply: false
+---
+
+<!-- Generated from skills/react-quality by scripts/build-cursor-rules.mjs. Edit the skill, not this file. -->
+
+# React Native with Expo
+
+React Native apps don't build with Vite. They use Metro, through Expo. The shared rules (TypeScript, components, state, testing) are the same as on web; this file covers what is different.
+
+## Setup
+
+- Use Expo (`npx create-expo-app@latest`) with the New Architecture and Hermes. Use a development build rather than Expo Go once you add native modules.
+- Apply the team configs: `configs/tsconfig/tsconfig.native.json`, `configs/eslint/eslint.config.native.js`, Prettier.
+- Config in `app.config.ts` (typed) rather than `app.json` when values come from env vars.
+- Install native packages with `npx expo install` so versions match the SDK.
+- Upgrade the Expo SDK at least once a year; run `npx expo-doctor` in CI.
+
+## Navigation
+
+- Use Expo Router (file-based) for new apps, or React Navigation if the project already uses it.
+- Type route params. With Expo Router, enable typed routes.
+- Each screen handles loading, error and empty states and has an error boundary (`ErrorBoundary` export in Expo Router).
+- Validate params from deep links before use.
+
+## Styling and layout
+
+- Use `StyleSheet.create` or the project's styling library (for example NativeWind or Unistyles) consistently.
+- Design tokens (colours, spacing, typography) live in one theme module. No inline magic numbers.
+- Use Flexbox; avoid fixed widths and heights that break on small screens or large fonts.
+- Respect safe areas with `react-native-safe-area-context`.
+- Support light and dark mode with `useColorScheme`.
+- Handle the keyboard on forms (`KeyboardAvoidingView` or `react-native-keyboard-controller`).
+
+## Components
+
+- Text must be inside `<Text>`. Guard conditional numbers (`count > 0 && …`) or the app crashes.
+- Use `Pressable` for touchables, with `accessibilityRole`, a label, a pressed style and a 44×44 hit area.
+- Use `expo-image` instead of `Image` for remote images.
+- Platform-specific code: small differences with `Platform.select`; large ones in `.ios.tsx` / `.android.tsx` files with the same props interface.
+- Share logic, hooks, types and API code with the web app; share UI only when it really fits both.
+
+## Lists
+
+- `FlatList` or `FlashList` for anything that can grow. Never `ScrollView` + `.map()` for long data.
+- Stable `keyExtractor`, memoized row component, `renderItem` defined outside JSX.
+- Provide `getItemLayout` (FlatList) or an `estimatedItemSize` where needed for smooth scrolling.
+
+## Storage
+
+| Data                            | Store                                    |
+| ------------------------------- | ---------------------------------------- |
+| Tokens, passwords, secrets      | `expo-secure-store`                      |
+| Small non-sensitive preferences | MMKV or AsyncStorage                     |
+| Larger structured offline data  | SQLite (`expo-sqlite`) or a sync library |
+| Server cache                    | TanStack Query (optionally persisted)    |
+
+Parse anything you read back from storage with a schema.
+
+## Permissions and device APIs
+
+- Ask for a permission only when the user starts the feature that needs it, and explain why first.
+- Handle the denied and "don't ask again" cases with a path to Settings.
+- Clean up subscriptions (location, sensors, `AppState`, `Keyboard`, `Linking`) in effect cleanups.
+
+## Animations and gestures
+
+- Use Reanimated and Gesture Handler so animations run on the UI thread.
+- Respect reduced motion.
+
+## Releases
+
+- Build with EAS Build; separate `development`, `preview` and `production` profiles.
+- Use EAS Update (OTA) only for JS changes; native changes need a store release. Use runtime versions to keep them compatible.
+- Increment the version and build number on every store release.
+- Test release builds on a real low-end Android device and an older iPhone before shipping.
+- Crash and error reporting (for example Sentry) with source maps uploaded for each build and update.
+
+## Testing
+
+- Jest with the `jest-expo` preset and React Native Testing Library for components.
+- Maestro (or Detox) for E2E flows on simulators and real devices.
+- Use `testID` only where role or label queries aren't possible.

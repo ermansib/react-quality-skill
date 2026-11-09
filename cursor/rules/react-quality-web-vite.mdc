@@ -1,0 +1,56 @@
+---
+description: Rules specific to React web apps built with Vite - config, env vars, aliases, routing, styling, build and deploy
+globs: vite.config.*,index.html,src/**/*.tsx,src/**/*.css
+alwaysApply: false
+---
+
+<!-- Generated from skills/react-quality by scripts/build-cursor-rules.mjs. Edit the skill, not this file. -->
+
+# React web with Vite
+
+## Setup
+
+- Start from `npm create vite@latest -- --template react-ts`, then apply the team configs from `configs/` (tsconfig, ESLint, Prettier, Vite, Vitest).
+- Use `@vitejs/plugin-react`. Turn on the React Compiler when the team agrees to (follow the React Compiler docs for the current Vite setup); then drop manual memoization.
+- Path alias `@/` → `src/`, defined once in `tsconfig.app.json` `paths` and mirrored in `vite.config.ts` `resolve.alias`.
+- Node version pinned in `.nvmrc` and `package.json` `engines`.
+
+## Environment variables
+
+- Only variables prefixed `VITE_` reach the client, and they are public.
+- Declare their types in `src/vite-env.d.ts` (`interface ImportMetaEnv`) and parse them once in `src/lib/env.ts`.
+- `.env.local` for personal overrides (ignored by git); `.env.example` committed.
+
+## Routing
+
+- Use the project's router (React Router or TanStack Router). Lazy-load every route component.
+- Each route gets its own error boundary (`errorElement` / `errorComponent`) and a loading fallback.
+- Read and write filters through typed search params.
+- Set the document title per route.
+
+## Styling
+
+- Use the project's approach consistently: Tailwind CSS, CSS Modules or a component library (MUI, shadcn/ui, Mantine). Don't mix approaches in one feature.
+- Design tokens (colours, spacing, radius, typography) live in one place: Tailwind theme or CSS custom properties. No hard-coded hex values in components.
+- Mobile-first, responsive layouts. Test at 320 px, 768 px and 1280 px.
+- Support dark mode through tokens if the product has it.
+- Class names are composed with a helper (`clsx` / `cn`), not string concatenation.
+
+## Build and deploy
+
+- `npm run build` runs `tsc -b` before `vite build`, so a type error fails the build.
+- Check bundle size on pull requests (`rollup-plugin-visualizer` or a size-limit check).
+- Generate source maps for monitoring but don't serve them publicly (upload them, then delete or restrict them).
+- Serve with long-lived cache headers for hashed assets and `no-cache` for `index.html`.
+- Configure security headers on the host: CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS.
+
+## Browser APIs
+
+- Guard browser-only APIs when code may run in tests or SSR: check `typeof window !== 'undefined'`.
+- Clean up listeners, observers and timers in effect cleanups.
+- Use `AbortController` for fetches and listeners tied to a component.
+
+## SEO and metadata (if the app is public)
+
+- Unique `<title>` and meta description per route; React 19 lets you render `<title>` and `<meta>` in components.
+- If SEO matters for content pages, consider a framework with server rendering instead of a pure Vite SPA.
