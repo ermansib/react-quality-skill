@@ -166,4 +166,4 @@ The point is intent, not ritual: understand the rule, then decide consciously.
 
 ## When reviewing
 
-Surface concrete violations with `file:line`, why it matters, and a suggested fix, ordered by severity. Use `references/code-review-checklist.md`.
+Surface concrete violations with `file:line`, why it matters, and a suggested fix, ordered by severity. Use `references/code-review-checklist.md`. For a full review report with rule ids, severities and a verdict, use the companion `react-quality-review` skill.

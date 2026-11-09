@@ -1,0 +1,107 @@
+---
+name: react-quality-review
+description: Review React and React Native code in TypeScript (Vite web apps and Expo apps) against the team's react-quality rules and report every violation with a rule id, severity, file:line and fix. Use whenever asked to review, audit, check or verify code, a diff, a branch or a pull request, including "does this follow our rules?", "review my component", "is this ready to merge?" or "audit src/features/cart".
+---
+
+# React + TypeScript Quality Review
+
+This skill checks code against the team's **react-quality** rules and reports what breaks them. It is the companion to the `react-quality` skill: that one tells you how to write the code, this one checks that the code was written that way. The full rule text, with reasons and examples, is in `references/rules/`, copied from `react-quality` so the two always agree.
+
+Review only. Don't edit code unless the person asks for fixes after seeing the report.
+
+## Files in this skill
+
+| File                          | Use it for                                                                                           |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `references/review-rules.md`  | The rule catalogue: every checkable rule with an id, severity and how to spot it                     |
+| `references/report-format.md` | The exact shape of the review report                                                                 |
+| `references/rules/*.md`       | The full react-quality rules with reasons and examples (open the matching file to explain a finding) |
+| `scripts/scan.mjs`            | A zero-dependency scanner that flags the mechanical violations quickly                               |
+
+## Review workflow
+
+### 1. Fix the scope
+
+Work out what to review before reading any code:
+
+- **A pull request or branch:** review the diff against the base branch (`git diff --merge-base origin/main...HEAD`). Report on changed lines, and on unchanged lines only when the change makes them wrong.
+- **Files or a folder:** review everything in them ("audit" mode).
+- **Pasted code:** review the snippet. Say which checks you couldn't run (type check, lint, tests) because there's no project around it.
+
+If the scope is unclear, use the current branch's diff against `main` and say so in the report.
+
+### 2. Detect the platform and project conventions
+
+- **Web (Vite):** `vite.config.*`, `react-dom`, `index.html`. Apply web rules (`WEB-*`, web `A11Y-*`).
+- **Native (Expo / Metro):** `expo` or `react-native` in `package.json`, `app.json` / `app.config.ts`, `metro.config.js`. Apply native rules (`RN-*`, native `A11Y-*`).
+- A monorepo can be both; decide per file.
+- Note the libraries already in use (router, state store, data fetching, styling, forms, test runner) and whether the **React Compiler** is on. Project conventions win over the catalogue where they conflict; report the conflict once as a note, not as a finding on every file.
+
+### 3. Run the automated gates (when there is a project)
+
+Run what the project has, read the output, and don't fix anything:
+
+```sh
+npx tsc --noEmit                       # or: npm run typecheck / tsc -b
+npx eslint --max-warnings 0 <files>    # or: npm run lint
+npx prettier --check <files>           # or: npm run format:check
+npm test                               # or: npx vitest run / npx jest
+```
+
+Then run the scanner on the same scope. It catches the mechanical rules that the project's ESLint config may not enforce:
+
+```sh
+node <this skill>/scripts/scan.mjs --changed origin/main    # files changed on this branch
+node <this skill>/scripts/scan.mjs src/features/cart         # a folder
+```
+
+Each scanner hit is a lead, not a verdict. Open the line, confirm it, and drop false positives (for example an `as` cast with a justifying comment). If a command can't run (no `node_modules`, no network), say so in the gates table rather than guessing the result.
+
+### 4. Read the code against the catalogue
+
+Go through `references/review-rules.md` section by section for the files in scope. The scanner can't judge design, so read for these yourself:
+
+- Effects that should be derived values or event handlers, chained effects, missing cleanups, race conditions.
+- Components defined inside components, components doing more than one job, boolean prop explosions, props copied into state.
+- State in the wrong home (server data in a store, filters not in the URL, one giant context).
+- Missing loading, error or empty states; errors only logged, never shown.
+- Accessible names, keyboard paths, focus handling, touch targets.
+- Untrusted input (API, URL, deep link, storage) used without a schema.
+- New logic without a test, or tests that check implementation instead of behaviour.
+
+Run the quick heuristics in `references/review-rules.md` on every change; they catch most problems.
+
+### 5. Respect intentional exceptions
+
+The rules allow deliberate exceptions with a comment that says why (`references/rules/core.md`, "When to break the rules"). An `as` cast with a link to the library issue, or `@ts-expect-error` with a tracking link, is not a finding. A missing or vague reason ("fix later") is.
+
+### 6. Write the report
+
+Follow `references/report-format.md` exactly: verdict, gate results, findings ordered by severity, then what's done well. Every finding has the rule id, `file:line`, what is wrong, why it matters, and a concrete fix (a short code snippet when it helps).
+
+## Severity
+
+| Severity    | Meaning                                                                                               | Examples                                                                                                      |
+| ----------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Blocker** | Bug, crash, security hole or data loss, or a failing gate. Must be fixed before merge.                | Unsanitized `dangerouslySetInnerHTML`, token in `localStorage`, raw text outside `<Text>`, failing type check |
+| **Major**   | Breaks a rule in a way that creates real risk for users or maintainers. Should be fixed before merge. | `any`, fetching in `useEffect`, index keys on a dynamic list, no error state, `<div onClick>`                 |
+| **Minor**   | Maintainability or consistency problem. Fix now or in a follow-up.                                    | Naming, magic numbers, file over 300 lines, missing explicit return type on an exported hook                  |
+| **Nit**     | Style or preference. Optional; mark it as such.                                                       | Import grouping a formatter missed, a clearer variable name                                                   |
+
+The catalogue gives each rule a default severity. Raise or lower it for the case in front of you (an index key on a static list is not a finding at all; `any` in a payment flow can be a blocker) and say why when you do.
+
+## Verdict
+
+- **Request changes:** any blocker or major finding, or a failing gate.
+- **Approve with comments:** only minor findings and nits.
+- **Approve:** nothing above a nit.
+
+## Rules for the reviewer
+
+- Every finding cites a rule id from the catalogue. If something is wrong but no rule covers it, use `GEN` and explain.
+- Point at the exact line. Quote the code if the line number could drift.
+- One finding per problem. If the same violation repeats, report it once with all locations listed.
+- Give the fix, not just the complaint. Prefer the smallest change that satisfies the rule.
+- Don't pad the report. No findings for things the rules don't ask for, and no restating of what the code does.
+- Mention what is done well, briefly. It tells the author what to keep doing.
+- If the change is large (over about 400 changed lines), say that it should be split, and review it anyway.

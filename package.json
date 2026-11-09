@@ -2,7 +2,7 @@
   "name": "react-quality-skill",
   "version": "1.0.0",
   "private": true,
-  "description": "Team React + TypeScript quality rules as a Claude skill, Cursor rules and shared configs for Vite and Expo projects.",
+  "description": "Team React + TypeScript quality rules and a matching code reviewer, as Claude skills, Cursor rules and shared configs for Vite and Expo projects.",
   "type": "module",
   "engines": {
     "node": ">=20.19"
@@ -16,8 +16,10 @@
     "typecheck": "tsc -p examples/web/tsconfig.json && tsc -p examples/native/tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "validate": "npm run check:cursor && npm run check:examples && npm run format:check && npm run typecheck && npm run lint:web && npm run lint:native && npm run test:web",
+    "validate": "npm run check:cursor && npm run check:examples && npm run format:check && npm run typecheck && npm run lint:web && npm run lint:native && npm run test:web && npm run test:review",
     "test:web": "cd examples/web && vitest run",
+    "test:review": "node --test tests/review/scan.test.mjs",
+    "review:scan": "node skills/react-quality-review/scripts/scan.mjs",
     "check:examples": "cmp configs/vite/vite.config.ts examples/web/vite.config.ts && cmp configs/vite/setup.ts examples/web/src/test/setup.ts"
   },
   "devDependencies": {
