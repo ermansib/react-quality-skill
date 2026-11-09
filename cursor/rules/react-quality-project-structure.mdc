@@ -1,0 +1,76 @@
+---
+description: Feature-based folder structure, file naming, import rules and module boundaries for React and React Native projects
+globs: src/**,app/**
+alwaysApply: false
+---
+
+<!-- Generated from skills/react-quality by scripts/build-cursor-rules.mjs. Edit the skill, not this file. -->
+
+# Project structure
+
+## Feature-based layout
+
+Group code by feature, not by file type. Shared code lives in top-level folders only when two or more features use it.
+
+```text
+src/
+├── app/                 # App shell: providers, router, global styles (Expo Router: the app/ folder at the root)
+├── features/
+│   └── users/
+│       ├── api.ts           # Endpoints and query hooks for this feature
+│       ├── types.ts         # Schemas and types
+│       ├── components/      # Components used only by this feature
+│       ├── hooks/
+│       ├── utils/
+│       └── index.ts         # The feature's public API
+├── components/          # Shared, generic UI (Button, Modal, TextField)
+├── hooks/               # Shared hooks (useDebounce, useMediaQuery)
+├── lib/                 # Configured third-party clients (apiClient, queryClient, i18n)
+├── utils/               # Pure shared helpers (formatDate, assertNever)
+├── constants/
+├── types/               # Truly global types only
+└── test/                # Test setup, MSW handlers, render helpers, factories
+```
+
+## Boundaries
+
+- A feature may import from shared folders (`components`, `hooks`, `lib`, `utils`) and from another feature's `index.ts` only.
+- Never import another feature's internals (`features/users/components/…` from `features/orders`).
+- Shared folders never import from `features/`.
+- No circular imports. ESLint's `import-x/no-cycle` catches them.
+- Keep `index.ts` barrels at the feature level only, and be intentional: export the feature's public API, not everything. Deep barrels in every folder slow down Vite and Metro and hide cycles.
+
+## Imports
+
+- Use the `@/` alias for anything outside the current feature: `import { Button } from '@/components/Button'`. Use relative imports inside a feature.
+- Order: built-ins and packages, then `@/` aliases, then relative, then styles. ESLint sorts them.
+- `import type` for types.
+- No default exports in shared code, so names stay the same everywhere.
+
+## File naming
+
+| File                       | Name                                            |
+| -------------------------- | ----------------------------------------------- |
+| Component                  | `UserCard.tsx`                                  |
+| Component test             | `UserCard.test.tsx`                             |
+| Hook                       | `useUser.ts`                                    |
+| Utility                    | `formatPrice.ts`                                |
+| Types / schemas            | `types.ts` or `user.schema.ts`                  |
+| Constants                  | `constants.ts`                                  |
+| Styles (CSS Modules)       | `UserCard.module.css`                           |
+| Platform-specific (native) | `Map.ios.tsx`, `Map.android.tsx`, `Map.web.tsx` |
+
+Tests, stories, styles and types sit next to the file they belong to. Colocation beats deep `__tests__` trees. A shared component can get its own folder (`components/Button/Button.tsx`, `Button.test.tsx`, `Button.module.css`).
+
+Types are `PascalCase` with no `I` or `T` prefix (`User`, not `IUser` or `TUser`). One file exports one primary thing; small helpers can live beside it until they grow.
+
+## Size limits
+
+- Files: about 300 lines. Functions: about 120 lines. ESLint enforces both (tests are excluded).
+- Complexity: 10 per function. Nesting depth: 4.
+- Above that, split by responsibility, not by line count.
+
+## Config and environment
+
+- Read env vars in one module (`lib/env.ts`) that parses them with a schema and exports a typed object. Nowhere else reads `import.meta.env` or `process.env`.
+- Feature flags come from one place too.

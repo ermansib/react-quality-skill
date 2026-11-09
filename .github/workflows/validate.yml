@@ -1,0 +1,29 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Cursor rules in sync, configs valid, examples pass
+        run: npm run validate
+      - name: Package the Claude skill
+        run: npm run package:skill
+      - uses: actions/upload-artifact@v4
+        with:
+          name: react-quality-skill
+          path: dist/react-quality.zip

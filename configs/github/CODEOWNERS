@@ -1,0 +1,3 @@
+# Copy to .github/CODEOWNERS and replace the team names.
+* @your-org/frontend-team
+/src/lib/ @your-org/frontend-leads

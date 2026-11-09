@@ -1,0 +1,47 @@
+{
+  "//": "Scripts and dev dependencies for an Expo / React Native app. Merge into your package.json. Install Expo packages with `npx expo install`.",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "jest --watch",
+    "test:coverage": "jest --coverage --ci",
+    "doctor": "expo-doctor",
+    "prepare": "husky"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "coverageThreshold": {
+      "global": { "lines": 80, "branches": 80, "functions": 80, "statements": 80 }
+    },
+    "collectCoverageFrom": ["src/**/*.{ts,tsx}", "!src/**/*.test.{ts,tsx}", "!src/**/types.ts"]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.0",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@eslint/js": "^9.39.0",
+    "@testing-library/react-native": "^14.0.0",
+    "@types/jest": "^30.0.0",
+    "eslint": "^9.39.0",
+    "eslint-config-prettier": "^10.1.0",
+    "eslint-import-resolver-typescript": "^4.4.0",
+    "eslint-plugin-import-x": "^4.18.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^7.1.0",
+    "eslint-plugin-react-native": "^5.0.0",
+    "eslint-plugin-testing-library": "^7.16.0",
+    "globals": "^17.0.0",
+    "husky": "^9.1.0",
+    "jest": "^30.0.0",
+    "jest-expo": "^58.0.0",
+    "lint-staged": "^17.0.0",
+    "prettier": "^3.9.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.0"
+  }
+}

@@ -1,0 +1,70 @@
+---
+description: Front-end security rules for React and React Native - XSS, secrets, token storage, URLs and deep links, dependencies
+globs: '**/*.ts,**/*.tsx'
+---
+
+# Security
+
+The client is public. Anything shipped to the browser or the app bundle can be read by anyone. Security decisions (authorization, validation, rate limits) are enforced on the server; the client only improves the experience.
+
+## Secrets and env vars
+
+- `VITE_*` and `EXPO_PUBLIC_*` variables are embedded in the bundle. Never put API secrets, private keys or service tokens in them.
+- Keep `.env` files with real values out of git; commit a `.env.example` with placeholder values.
+- Calls that need a secret go through your backend or a serverless function.
+
+## XSS
+
+- React escapes text by default. Don't bypass it.
+- Avoid `dangerouslySetInnerHTML`. If you must render HTML (CMS content, markdown), sanitize it with DOMPurify first, in one shared helper.
+- Never build HTML strings, `eval`, `new Function` or `setTimeout` with a string.
+- Validate URLs before using them in `href`, `src` or `Linking.openURL`. Allow only `https:` (and `mailto:` / `tel:` where needed); block `javascript:` and `data:`.
+
+```ts
+const SAFE_PROTOCOLS = new Set(['https:', 'mailto:', 'tel:']);
+
+export function isSafeUrl(value: string): boolean {
+  try {
+    return SAFE_PROTOCOLS.has(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+}
+```
+
+- `target="_blank"` links get `rel="noopener noreferrer"`.
+- Set a Content Security Policy on the web host. Avoid inline scripts so the CSP can be strict.
+- Review every third-party script (analytics, chat widgets, tag managers) before adding it; it runs with full access to the page.
+
+## Authentication and tokens
+
+- Web: prefer httpOnly, `Secure`, `SameSite` cookies set by the server. Don't store access or refresh tokens in `localStorage` or `sessionStorage`. If tokens must live in JS, keep them in memory only.
+- Native: store tokens in `expo-secure-store` (Keychain / Keystore), never in `AsyncStorage` or MMKV unencrypted.
+- Clear tokens and cached user data (including the query cache) on logout.
+- Hiding a button is not authorization. The server must check permissions for every request.
+
+## Input and data
+
+- Validate all external input with a schema: forms, URL params, deep links, push notification payloads, `postMessage`, storage.
+- Check `event.origin` before trusting a `postMessage`.
+- Don't put personal data in URLs, logs, analytics events or error reports.
+
+## Deep links (native)
+
+- Treat every deep link as untrusted input. Parse and validate params before navigating or calling APIs.
+- Don't let a deep link trigger a sensitive action (payment, delete, change email) without user confirmation.
+- Use universal links / app links with domain verification instead of custom schemes for anything sensitive.
+
+## Dependencies
+
+- Run `npm audit --audit-level=high` in CI and keep Dependabot (or Renovate) on. Add Snyk or GitHub code scanning for deeper checks.
+- Commit the lockfile and install with `npm ci`.
+- Before adding a package, check it is maintained, widely used and the right size for the job.
+- Pin GitHub Actions to a version tag or commit SHA.
+
+## Native specifics
+
+- Turn off debugging and dev menus in release builds; don't ship `__DEV__` code paths with sensitive behaviour.
+- Use HTTPS only; don't add cleartext exceptions in `app.json` / `Info.plist` / Android network config.
+- Request permissions only when a feature needs them, and explain why first.
+- Consider certificate pinning for high-risk apps (banking, health).

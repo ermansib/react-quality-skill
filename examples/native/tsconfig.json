@@ -1,0 +1,8 @@
+// Example project used to check the team configs in CI.
+{
+  "extends": "../../configs/tsconfig/tsconfig.native.json",
+  "compilerOptions": {
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["src"]
+}

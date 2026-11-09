@@ -1,0 +1,14 @@
+// Expo / React Native app. Use as tsconfig.json. Expo's base sets the RN types and module settings.
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": ["expo/tsconfig.base", "./tsconfig.base.json"],
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["node_modules"]
+}

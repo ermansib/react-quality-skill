@@ -1,0 +1,2 @@
+# Husky pre-commit hook. Copy to .husky/pre-commit.
+npx lint-staged
